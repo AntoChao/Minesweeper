@@ -1,0 +1,124 @@
+import numpy as np
+import random
+import pandas as pd
+
+def autocreate(X,Y,MineCount):
+    Board = np.zeros((X, Y))
+    for i in range(MineCount):
+        X_random = random.randint(0,X-1)
+        Y_random = random.randint(0,Y-1)
+        if Board[X_random][Y_random] >= 9:
+            pass
+        else:
+            Board[X_random][Y_random] = 9
+            if X_random == 0:
+                if Y_random == 0:
+                    Board[X_random:X_random + 2, Y_random:Y_random + 2] += 1
+                else:
+                    Board[X_random:X_random + 2, Y_random - 1:Y_random + 2] += 1
+            elif Y_random == 0:
+                Board[X_random - 1:X_random + 2, Y_random:Y_random + 2] += 1
+            else:
+                Board[X_random - 1:X_random + 2, Y_random - 1:Y_random + 2] += 1
+    return Board
+
+def revealAllZerosAdj(X_Original,Y_Original,Board_ToShow,Board_Completed,Row,Column):
+    Board_ToShow[X_Original][Y_Original] = "0"
+    X_Up = X_Original - 1
+    X_Down = X_Original + 1
+    Y_Left = Y_Original - 1
+    Y_Right = Y_Original + 1
+    if X_Up >= 0:
+        if Board_Completed[X_Up][Y_Original] == 0 and Board_ToShow[X_Up][Y_Original] == " ":
+            print("se fue para arriba")
+            Board_ToShow = revealAllZerosAdj(X_Up,Y_Original,Board_ToShow,Board_Completed,Row,Column)
+        else:
+            Board_ToShow[X_Up][Y_Original] = str(Board_Completed[X_Up][Y_Original])
+    if X_Down < Row:
+        if Board_Completed[X_Down][Y_Original] == 0 and Board_ToShow[X_Down][Y_Original] == " ":
+            print("se fue para abajo")
+            Board_ToShow = revealAllZerosAdj(X_Down,Y_Original, Board_ToShow, Board_Completed,Row,Column)
+        else:
+            Board_ToShow[X_Down][Y_Original] = str(Board_Completed[X_Down][Y_Original])
+    if Y_Left >= 0:
+        if Board_Completed[X_Original][Y_Left] == 0 and Board_ToShow[X_Original][Y_Left] == " ":
+            print("se fue para izquierda")
+            Board_ToShow = revealAllZerosAdj(X_Original,Y_Left, Board_ToShow, Board_Completed,Row,Column)
+        else:
+            Board_ToShow[X_Original][Y_Left] = str(Board_Completed[X_Original][Y_Left])
+    if Y_Right < Column:
+        if Board_Completed[X_Original][Y_Right] == 0 and Board_ToShow[X_Original][Y_Right] == " ":
+            print("se fue para derecha")
+            Board_ToShow = revealAllZerosAdj(X_Original,Y_Right, Board_ToShow, Board_Completed,Row,Column)
+        else:
+            Board_ToShow[X_Original][Y_Right] = str(Board_Completed[X_Original][Y_Right])
+
+    return Board_ToShow
+
+def checkWinCondition(Row, Column, Board_ToShow,CellsNotMine, Finish, Victory):
+    counter = 0
+    for i in range(Row):
+        for j in range(Column):
+            if Board_ToShow[i][j] == "*":
+                Finish = True
+                Victory = False
+                return Finish, Victory
+            else:
+                if Board_ToShow[i][j] != " ":
+                    counter += 1
+
+    if counter == CellsNotMine:
+        Finish = True
+        Victory = True
+        return Finish, Victory
+    else:
+        return Finish, Victory
+
+def main ():
+    #Inputs to initialize the board
+    print("Enter the size of Minesweeper you want to play")
+    Row = int(input("Row size: "))
+    Column = int(input("Column size: "))
+
+    #Create the Board
+    MineCount = round(Row * Column * 0.2)
+    CellsNotMine = Row * Column - MineCount
+    Board_ToShow = np.full((Row, Column), " ")
+    Board_Completed = autocreate(Row, Column, MineCount)
+
+    indexList = []
+    for i in range(Row):
+        indexList.append(i + 1)
+
+    #Game start:
+    Victory = False
+    Finish = False
+    print("Game start:")
+    while not Finish:
+        df = pd.DataFrame(Board_ToShow,columns=indexList,index=indexList)
+        print(df)
+        print("")
+        X = int(input("X position: "))-1
+        Y = int(input("Y position: "))-1
+        print("")
+
+        #Board[X][Y]
+        #   can be 0 -> open all the cells of 0 adj
+        #   can be between 0 - 9 -> just reveal this cell
+        #   can be > 9 -> BOOM explode
+
+        if Board_Completed[X][Y] == 0:
+            Board_ToShow = revealAllZerosAdj(X,Y,Board_ToShow,Board_Completed,Row,Column)
+        elif 0 < Board_Completed[X][Y] < 9:
+            Board_ToShow[X][Y] = str(Board_Completed[X][Y])
+        else:
+            Board_ToShow[X][Y] = "*"
+
+        Finish,Victory = checkWinCondition(Row, Column, Board_ToShow,CellsNotMine, Finish, Victory)
+
+    if Victory:
+        print("Congratulation, you beat the game")
+    else:
+        print("Oh, you lose, nice try")
+
+main()
